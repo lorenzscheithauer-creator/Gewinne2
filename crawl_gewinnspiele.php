@@ -35,6 +35,9 @@ function main(string $host, string $dbName, string $user, string $pass, array $s
     }
 
     $totalInserted = 0;
+    $totalJunk = 0;
+    $totalNoPrizeText = 0;
+    $totalNoDate = 0;
 
     foreach ($seiten as $seite) {
         echo 'Seite: ' . $seite . "\n";
@@ -48,30 +51,54 @@ function main(string $host, string $dbName, string $user, string $pass, array $s
         $links = extractLinks($html, $seite);
         $foundCount = count($links);
         $newCount = 0;
+        $junkCount = 0;
+        $noPrizeTextCount = 0;
+        $noDateCount = 0;
 
         foreach ($links as $link) {
             if (isJunkUrl($link)) {
+                $junkCount++;
                 continue;
             }
 
-            if (!pageHasPrizeInfo($link)) {
+            $failureReason = null;
+            $analysis = analyzeContestPage($link, $failureReason);
+            if ($analysis === null) {
+                if ($failureReason === 'no_prize_text') {
+                    $noPrizeTextCount++;
+                } elseif ($failureReason === 'no_date') {
+                    $noDateCount++;
+                }
                 continue;
             }
 
-            if (saveLinkIfNew($pdo, $link)) {
+            if (saveLinkIfNew($pdo, $link, $analysis)) {
                 $newCount++;
             }
         }
 
+        $totalJunk += $junkCount;
+        $totalNoPrizeText += $noPrizeTextCount;
+        $totalNoDate += $noDateCount;
+
         echo sprintf(
-            "  %d Links gefunden (Junk-Links gefiltert, nur Seiten mit Gewinn-Begriffen gespeichert), %d neu eingefügt\n\n",
+            "  %d Links gefunden, %d neu eingefügt. Verworfen: Junk %d | kein Gewinnspiel-Text %d | kein Datum %d\n\n",
             $foundCount,
-            $newCount
+            $newCount,
+            $junkCount,
+            $noPrizeTextCount,
+            $noDateCount
         );
         $totalInserted += $newCount;
     }
 
     echo 'Fertig. Insgesamt ' . $totalInserted . ' neue Links gespeichert.' . "\n";
+    echo sprintf(
+        "Verworfen gesamt: Junk %d | kein Gewinnspiel-Text %d | kein Datum %d\n",
+        $totalJunk,
+        $totalNoPrizeText,
+        $totalNoDate
+    );
     echo '</pre></body></html>';
 }
 
@@ -234,6 +261,18 @@ function isJunkUrl(string $url): bool
         return true;
     }
 
+    if (preg_match('~^https?://(www\.)?supergewinne\.de/?$~', $urlLower)) {
+        return true;
+    }
+
+    if (preg_match('~^https?://(www\.)?x\.com/supergewinne~', $urlLower)) {
+        return true;
+    }
+
+    if (str_contains($urlLower, '/gewinnspiele/autogewinnspiele')) {
+        return true;
+    }
+
     $badParts = [
         '/user/', 'user=',
         'profil', 'profile',
@@ -252,49 +291,7 @@ function isJunkUrl(string $url): bool
     return false;
 }
 
-function pageHasPrizeInfo(string $url): bool
-{
-    static $cache = [];
-
-    if (array_key_exists($url, $cache)) {
-        return $cache[$url];
-    }
-
-    $context = stream_context_create([
-        'http' => [
-            'timeout' => 10,
-            'user_agent' => 'Gewinne2Crawler/1.0',
-        ],
-    ]);
-
-    $html = @file_get_contents($url, false, $context);
-    if ($html === false || trim($html) === '') {
-        return $cache[$url] = false;
-    }
-
-    $text = strip_tags($html);
-    $text = mb_strtolower($text, 'UTF-8');
-
-    $keywords = [
-        'gewinn', 'gewinnen', 'gewinnspiel', 'verlosung',
-        'preise', 'preis', 'hauptpreis',
-        'zu gewinnen', 'wir verlosen', 'chance auf',
-        'gutschein', 'reise', 'auto', 'jackpot',
-        'teilnahmeschluss', 'teilnehmen und gewinnen',
-        'sie können gewinnen', 'du kannst gewinnen',
-        'wir verlosen',
-    ];
-
-    foreach ($keywords as $kw) {
-        if (mb_strpos($text, $kw) !== false) {
-            return $cache[$url] = true;
-        }
-    }
-
-    return $cache[$url] = false;
-}
-
-function saveLinkIfNew(PDO $pdo, string $link): bool
+function saveLinkIfNew(PDO $pdo, string $link, array $analysis): bool
 {
     static $selectStmt = null;
     static $insertStmt = null;
@@ -304,7 +301,10 @@ function saveLinkIfNew(PDO $pdo, string $link): bool
     }
 
     if ($insertStmt === null) {
-        $insertStmt = $pdo->prepare('INSERT INTO gewinnspiele (link_zur_webseite, beschreibung) VALUES (:link, NULL)');
+        $insertStmt = $pdo->prepare('
+            INSERT INTO gewinnspiele (link_zur_webseite, beschreibung, status, endet_am)
+            VALUES (:link, NULL, :status, :endet_am)
+        ');
     }
 
     $selectStmt->execute([':link' => $link]);
@@ -312,6 +312,74 @@ function saveLinkIfNew(PDO $pdo, string $link): bool
         return false;
     }
 
-    $insertStmt->execute([':link' => $link]);
+    $insertStmt->execute([
+        ':link' => $link,
+        ':status' => $analysis['status'],
+        ':endet_am' => $analysis['end_date'],
+    ]);
     return true;
+}
+
+function analyzeContestPage(string $url, ?string &$failureReason = null): ?array
+{
+    $context = stream_context_create([
+        'http' => [
+            'timeout' => 10,
+            'user_agent' => 'Gewinne2Crawler/1.0',
+        ]
+    ]);
+
+    $html = @file_get_contents($url, false, $context);
+    if ($html === false || trim($html) === '') {
+        $failureReason = 'fetch_failed';
+        return null;
+    }
+
+    $text = strip_tags($html);
+    $text = mb_strtolower($text, 'UTF-8');
+
+    $keywords = [
+        'gewinn', 'gewinnen', 'gewinnspiel', 'verlosung',
+        'preis', 'preise', 'hauptpreis',
+        'zu gewinnen', 'wir verlosen', 'wir verlosen', 'chance auf',
+        'gutschein', 'reise', 'auto', 'jackpot',
+        'teilnahmeschluss', 'einsendeschluss'
+    ];
+
+    $hasPrizeWords = false;
+    foreach ($keywords as $kw) {
+        if (mb_strpos($text, $kw) !== false) {
+            $hasPrizeWords = true;
+            break;
+        }
+    }
+
+    if (!$hasPrizeWords) {
+        $failureReason = 'no_prize_text';
+        return null;
+    }
+
+    if (!preg_match('~(\d{1,2}\.\d{1,2}\.\d{2,4})~', $text, $matches)) {
+        $failureReason = 'no_date';
+        return null;
+    }
+
+    $dateStr = $matches[1];
+    $date = DateTime::createFromFormat('d.m.Y', $dateStr)
+        ?: DateTime::createFromFormat('d.m.y', $dateStr);
+
+    if (!$date) {
+        $failureReason = 'no_date';
+        return null;
+    }
+
+    $endDate = $date->setTime(23, 59, 59);
+    $today = new DateTime('today');
+
+    $status = ($endDate < $today) ? 'Expired' : 'Active';
+
+    return [
+        'status'   => $status,
+        'end_date' => $endDate->format('Y-m-d'),
+    ];
 }
