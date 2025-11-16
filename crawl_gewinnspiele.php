@@ -15,7 +15,6 @@ $dbUser = 'root';
 $dbPass = '';
 
 $portale = [
-    'einfach-sparsam'    => 'https://www.einfach-sparsam.de/gewinnspiele?page=1&id=76468&',
     'gewinnspiele-markt' => 'https://www.gewinnspiele-markt.de/gewinnspiel-gratis-gara-00.html',
     'gewinnspiel.de'     => 'https://www.gewinnspiel.de',
     '12gewinn'           => 'https://www.12gewinn.de',
@@ -48,6 +47,8 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
         'teilnahme_links_found'  => 0,
         'saved'                  => 0,
         'discarded'              => 0,
+        'saved_active'           => 0,
+        'saved_expired'          => 0,
     ];
 
     foreach ($portale as $portalName => $portalUrl) {
@@ -55,8 +56,10 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
 
         if ($portalName === 'supergewinne') {
             $listPages = getAllSupergewinneListPages($portalUrl);
+        } elseif ($portalName === '12gewinn') {
+            $listPages = getAll12GewinnListPages($portalUrl);
         } else {
-            $listPages = [$portalUrl];
+            $listPages = getAllGenericListPages($portalUrl);
         }
 
         $contestLinks = [];
@@ -74,6 +77,8 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
         $validPortalCount = 0;
         $teilnahmeFoundCount = 0;
         $savedCount = 0;
+        $savedActive = 0;
+        $savedExpired = 0;
         $discardedCount = 0;
 
         foreach ($contestLinks as $portalContestUrl) {
@@ -107,6 +112,11 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
 
             if (saveLinkIfNew($pdo, $finalUrl, $analysis)) {
                 $savedCount++;
+                if ($analysis['status'] === 'Active') {
+                    $savedActive++;
+                } else {
+                    $savedExpired++;
+                }
             }
         }
 
@@ -115,12 +125,14 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
         $totals['valid_portal_contests'] += $validPortalCount;
         $totals['teilnahme_links_found'] += $teilnahmeFoundCount;
         $totals['saved'] += $savedCount;
+        $totals['saved_active'] += $savedActive;
+        $totals['saved_expired'] += $savedExpired;
         $totals['discarded'] += $discardedCount;
 
         echo '<p>Gefundene Portal-Gewinnspielseiten: ' . $portalLinkCount . '</p>';
         echo '<p>Davon als Gewinnspiele erkannt (mit Datum &amp; Gewinn): ' . $validPortalCount . '</p>';
         echo '<p>Ermittelte externe Teilnahme-Links: ' . $teilnahmeFoundCount . '</p>';
-        echo '<p>Davon gespeichert: ' . $savedCount . '</p>';
+        echo '<p>Davon gespeichert: ' . $savedCount . ' (Active: ' . $savedActive . ', Expired: ' . $savedExpired . ')</p>';
         echo '<p>Verworfene Einträge: ' . $discardedCount . '</p>';
     }
 
@@ -128,10 +140,12 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
     echo '<p>Portal-Detailseiten gesamt: ' . $totals['portal_links'] . '</p>';
     echo '<p>Davon als Gewinnspiele erkannt: ' . $totals['valid_portal_contests'] . '</p>';
     echo '<p>"Jetzt teilnehmen"-Links gefunden: ' . $totals['teilnahme_links_found'] . '</p>';
-    echo '<p>Gespeicherte Gewinnspiele (mit Enddatum &amp; Preis): ' . $totals['saved'] . '</p>';
+    echo '<p>Gespeicherte Gewinnspiele (mit Enddatum &amp; Preis): ' . $totals['saved'] . ' (Active: ' . $totals['saved_active'] . ', Expired: ' . $totals['saved_expired'] . ')</p>';
     echo '<p>Verworfene Einträge gesamt: ' . $totals['discarded'] . '</p>';
     echo '<p>Fertig. Insgesamt ' . $totals['saved'] . ' neue Gewinnspiele gespeichert.</p>';
-    echo '<h2>Scan abgeschlossen – alle Gewinnspiele wurden verarbeitet.</h2>';
+    echo '<h2>Scan abgeschlossen.</h2>';
+    echo '<p>Gesamt gespeicherte Gewinnspiele in diesem Lauf: ' . $totals['saved'] . '</p>';
+    echo '<p>Davon Active: ' . $totals['saved_active'] . ', Expired: ' . $totals['saved_expired'] . '</p>';
     echo '<p>Dieses Skript ist bereit, per Cronjob / Aufgabenplanung alle 10 Minuten ausgeführt zu werden.</p>';
     echo '</body></html>';
 }
@@ -282,6 +296,109 @@ function getAllSupergewinneListPages(string $startUrl): array
     }
 
     return array_values(array_unique($result));
+}
+
+/**
+ * 12gewinn.de – besucht alle Kategorieseiten / Paginationsseiten des Portals.
+ */
+function getAll12GewinnListPages(string $startUrl): array
+{
+    $keywords = [
+        'gewinn', 'gewinnspiel', 'gewinnspiele', 'verlosung',
+        'seite', 'page', 'weiter', 'tab', 'mehr',
+    ];
+
+    return crawlInternalListPages($startUrl, $keywords);
+}
+
+/**
+ * Generische Variante für Portale ohne Speziallogik
+ * (gewinnspiel.de, gewinnspiele-markt.de, ...).
+ */
+function getAllGenericListPages(string $startUrl): array
+{
+    $keywords = [
+        'gewinn', 'gewinnspiel', 'gewinnspiele', 'verlosung',
+        'seite', 'page', 'weiter', 'kategorie', 'tab', 'mehr', 'alle',
+    ];
+
+    return crawlInternalListPages($startUrl, $keywords);
+}
+
+/**
+ * Hilfsfunktion: Crawlt interne Links basierend auf Schlüsselwörtern,
+ * bleibt innerhalb der Ausgangs-Domain und vermeidet doppelte Seiten.
+ */
+function crawlInternalListPages(string $startUrl, array $keywords): array
+{
+    $toVisit = [$startUrl];
+    $visited = [];
+    $result  = [];
+    $startHost = parse_url($startUrl, PHP_URL_HOST) ?? '';
+
+    while ($toVisit) {
+        $url = array_pop($toVisit);
+        if (isset($visited[$url])) {
+            continue;
+        }
+        $visited[$url] = true;
+
+        $html = fetchHtml($url);
+        if ($html === null) {
+            continue;
+        }
+
+        $result[] = $url;
+
+        $dom = new DOMDocument();
+        @$dom->loadHTML($html);
+        $xpath = new DOMXPath($dom);
+
+        foreach ($xpath->query('//a[@href]') as $a) {
+            $href = $a->getAttribute('href');
+            $fullUrl = normalizeUrl($href, $url);
+            if (!$fullUrl) {
+                continue;
+            }
+
+            $host = parse_url($fullUrl, PHP_URL_HOST);
+            if (!$host || !isSamePortalDomain($host, $startHost)) {
+                continue;
+            }
+
+            $text = trim($a->textContent ?? '');
+            $haystack = mb_strtolower($fullUrl . ' ' . $text, 'UTF-8');
+
+            foreach ($keywords as $keyword) {
+                if (mb_strpos($haystack, mb_strtolower($keyword, 'UTF-8')) !== false) {
+                    if (!isset($visited[$fullUrl])) {
+                        $toVisit[] = $fullUrl;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    return array_values(array_unique($result));
+}
+
+function isSamePortalDomain(string $candidateHost, string $startHost): bool
+{
+    $normalize = static function (string $host): string {
+        $host = mb_strtolower($host, 'UTF-8');
+        $host = preg_replace('/^www\./', '', $host) ?? $host;
+        return ltrim($host, '.');
+    };
+
+    $candidate = $normalize($candidateHost);
+    $start = $normalize($startHost);
+
+    if ($candidate === $start) {
+        return true;
+    }
+
+    return str_ends_with($candidate, '.' . $start);
 }
 
 /**
