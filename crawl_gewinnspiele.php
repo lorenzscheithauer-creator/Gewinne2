@@ -42,13 +42,12 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
     }
 
     $totals = [
-        'portal_links'           => 0,
-        'valid_portal_contests'  => 0,
-        'teilnahme_links_found'  => 0,
-        'saved'                  => 0,
-        'discarded'              => 0,
-        'saved_active'           => 0,
-        'saved_expired'          => 0,
+        'portal_links'          => 0,
+        'teilnahme_links_found' => 0,
+        'saved'                 => 0,
+        'saved_active'          => 0,
+        'saved_expired'         => 0,
+        'discarded'             => 0,
     ];
 
     foreach ($portale as $portalName => $portalUrl) {
@@ -74,7 +73,6 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
         $portalLinkCount = count($contestLinks);
         $totals['portal_links'] += $portalLinkCount;
 
-        $validPortalCount = 0;
         $teilnahmeFoundCount = 0;
         $savedCount = 0;
         $savedActive = 0;
@@ -87,11 +85,17 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
             }
 
             $analysis = analyzePortalContestPage($portalContestUrl);
-            if ($analysis === null) {
-                continue;
-            }
+            $status = 'Active';
+            $endDate = null;
 
-            $validPortalCount++;
+            if (is_array($analysis)) {
+                if (!empty($analysis['status'])) {
+                    $status = $analysis['status'];
+                }
+                if (!empty($analysis['end_date'])) {
+                    $endDate = $analysis['end_date'];
+                }
+            }
 
             if ($portalName === 'supergewinne') {
                 $finalUrl = findFinalContestUrlForSupergewinne($portalContestUrl);
@@ -110,19 +114,18 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
                 continue;
             }
 
-            if (saveLinkIfNew($pdo, $finalUrl, $analysis)) {
+            if (saveLinkIfNew($pdo, $finalUrl, $status, $endDate)) {
                 $savedCount++;
-                if ($analysis['status'] === 'Active') {
-                    $savedActive++;
-                } else {
+                if ($status === 'Expired') {
                     $savedExpired++;
+                } else {
+                    $savedActive++;
                 }
             }
         }
 
         $discardedCount = max(0, $portalLinkCount - $savedCount);
 
-        $totals['valid_portal_contests'] += $validPortalCount;
         $totals['teilnahme_links_found'] += $teilnahmeFoundCount;
         $totals['saved'] += $savedCount;
         $totals['saved_active'] += $savedActive;
@@ -130,22 +133,20 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
         $totals['discarded'] += $discardedCount;
 
         echo '<p>Gefundene Portal-Gewinnspielseiten: ' . $portalLinkCount . '</p>';
-        echo '<p>Davon als Gewinnspiele erkannt (mit Datum &amp; Gewinn): ' . $validPortalCount . '</p>';
         echo '<p>Ermittelte externe Teilnahme-Links: ' . $teilnahmeFoundCount . '</p>';
         echo '<p>Davon gespeichert: ' . $savedCount . ' (Active: ' . $savedActive . ', Expired: ' . $savedExpired . ')</p>';
-        echo '<p>Verworfene Einträge: ' . $discardedCount . '</p>';
+        echo '<p>Nicht gespeichert (z. B. kein Teilnahme-Link oder Duplikat): ' . $discardedCount . '</p>';
     }
 
     echo '<h2>Gesamtübersicht</h2>';
     echo '<p>Portal-Detailseiten gesamt: ' . $totals['portal_links'] . '</p>';
-    echo '<p>Davon als Gewinnspiele erkannt: ' . $totals['valid_portal_contests'] . '</p>';
     echo '<p>"Jetzt teilnehmen"-Links gefunden: ' . $totals['teilnahme_links_found'] . '</p>';
-    echo '<p>Gespeicherte Gewinnspiele (mit Enddatum &amp; Preis): ' . $totals['saved'] . ' (Active: ' . $totals['saved_active'] . ', Expired: ' . $totals['saved_expired'] . ')</p>';
-    echo '<p>Verworfene Einträge gesamt: ' . $totals['discarded'] . '</p>';
-    echo '<p>Fertig. Insgesamt ' . $totals['saved'] . ' neue Gewinnspiele gespeichert.</p>';
+    echo '<p>Neu gespeicherte Gewinnspiele: ' . $totals['saved'] . '</p>';
+    echo '<p>Active: ' . $totals['saved_active'] . ', Expired: ' . $totals['saved_expired'] . '</p>';
+    echo '<p>Nicht gespeicherte Einträge: ' . $totals['discarded'] . '</p>';
     echo '<h2>Scan abgeschlossen.</h2>';
-    echo '<p>Gesamt gespeicherte Gewinnspiele in diesem Lauf: ' . $totals['saved'] . '</p>';
-    echo '<p>Davon Active: ' . $totals['saved_active'] . ', Expired: ' . $totals['saved_expired'] . '</p>';
+    echo '<p>Neu gespeicherte Gewinnspiele: ' . $totals['saved'] . '</p>';
+    echo '<p>Active: ' . $totals['saved_active'] . ', Expired: ' . $totals['saved_expired'] . '</p>';
     echo '<p>Dieses Skript ist bereit, per Cronjob / Aufgabenplanung alle 10 Minuten ausgeführt zu werden.</p>';
     echo '</body></html>';
 }
@@ -538,7 +539,7 @@ function isJunkUrl(string $url): bool
     return false;
 }
 
-function saveLinkIfNew(PDO $pdo, string $link, array $analysis): bool
+function saveLinkIfNew(PDO $pdo, string $link, string $status, ?string $endDate): bool
 {
     static $selectStmt = null;
     static $insertStmt = null;
@@ -561,8 +562,8 @@ function saveLinkIfNew(PDO $pdo, string $link, array $analysis): bool
 
     $insertStmt->execute([
         ':link' => $link,
-        ':status' => $analysis['status'],
-        ':endet_am' => $analysis['end_date'],
+        ':status' => $status,
+        ':endet_am' => $endDate,
     ]);
     return true;
 }
@@ -577,45 +578,25 @@ function analyzePortalContestPage(string $portalContestUrl): ?array
     $text = strip_tags($html);
     $textLower = mb_strtolower($text, 'UTF-8');
 
-    $keywords = [
-        'gewinn', 'gewinnen', 'gewinnspiel', 'verlosung',
-        'preis', 'preise', 'hauptpreis',
-        'zu gewinnen', 'wir verlosen', 'chance auf',
-        'gutschein', 'reise', 'reisegutschein', 'auto', 'jackpot'
+    $analysis = [
+        'status'   => null,
+        'end_date' => null,
     ];
 
-    $hasPrize = false;
-    foreach ($keywords as $kw) {
-        if (mb_strpos($textLower, $kw) !== false) {
-            $hasPrize = true;
-            break;
+    if (preg_match('~(\d{1,2}\.\d{1,2}\.\d{2,4})~', $textLower, $m)) {
+        $dateStr = $m[1];
+        $date = DateTime::createFromFormat('d.m.Y', $dateStr)
+            ?: DateTime::createFromFormat('d.m.y', $dateStr);
+
+        if ($date instanceof DateTime) {
+            $endDate = $date->setTime(23, 59, 59);
+            $today = new DateTime('today');
+            $analysis['end_date'] = $endDate->format('Y-m-d');
+            $analysis['status'] = ($endDate < $today) ? 'Expired' : 'Active';
         }
     }
 
-    if (!$hasPrize) {
-        return null;
-    }
-
-    if (!preg_match('~(\d{1,2}\.\d{1,2}\.\d{2,4})~', $textLower, $m)) {
-        return null;
-    }
-
-    $dateStr = $m[1];
-    $date = DateTime::createFromFormat('d.m.Y', $dateStr)
-        ?: DateTime::createFromFormat('d.m.y', $dateStr);
-
-    if (!$date) {
-        return null;
-    }
-
-    $endDate = $date->setTime(23, 59, 59);
-    $today = new DateTime('today');
-    $status = ($endDate < $today) ? 'Expired' : 'Active';
-
-    return [
-        'status'   => $status,
-        'end_date' => $endDate->format('Y-m-d'),
-    ];
+    return $analysis;
 }
 
 /**
