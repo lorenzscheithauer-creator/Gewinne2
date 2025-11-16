@@ -18,7 +18,7 @@ $portale = [
     'einfach-sparsam'    => 'https://www.einfach-sparsam.de/gewinnspiele?page=1&id=76468&',
     'gewinnspiele-markt' => 'https://www.gewinnspiele-markt.de/gewinnspiel-gratis-gara-00.html',
     'gewinnspiel.de'     => 'https://www.gewinnspiel.de',
-    '12gewinn.de'        => 'https://www.12gewinn.de',
+    '12gewinn'           => 'https://www.12gewinn.de',
     'supergewinne.de'    => 'https://www.supergewinne.de',
 ];
 
@@ -74,7 +74,11 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
 
             $validPortalCount++;
 
-            $finalUrl = findJetztTeilnehmenLink($portalContestUrl);
+            if ($portalName === '12gewinn') {
+                $finalUrl = findFinalContestUrlFor12Gewinn($portalContestUrl);
+            } else {
+                $finalUrl = findJetztTeilnehmenLink($portalContestUrl);
+            }
             if ($finalUrl === null) {
                 continue;
             }
@@ -426,4 +430,69 @@ function findJetztTeilnehmenLink(string $portalContestUrl): ?string
     }
 
     return null;
+}
+
+/**
+ * 12gewinn.de Spezial:
+ * - Auf der Portal-Detailseite den ersten "Zum Gewinnspiel"-Link finden
+ * - Diese URL laden (Gewinner-Mail-Popup / Zwischenseite)
+ * - Dort erneut einen "zum Gewinnspiel"-Link finden
+ * - Rückgabe: finale externe Gewinnspiel-URL oder null
+ */
+function findFinalContestUrlFor12Gewinn(string $portalContestUrl): ?string
+{
+    $html1 = fetchHtml($portalContestUrl);
+    if ($html1 === null) {
+        return null;
+    }
+
+    $dom1 = new DOMDocument();
+    @$dom1->loadHTML($html1);
+    $xpath1 = new DOMXPath($dom1);
+
+    $firstUrl = null;
+
+    foreach ($xpath1->query('//a[@href]') as $a) {
+        $text = trim($a->textContent ?? '');
+        $textLower = mb_strtolower($text, 'UTF-8');
+
+        if (mb_strpos($textLower, 'zum gewinnspiel') !== false) {
+            $href = $a->getAttribute('href');
+            $firstUrl = normalizeUrl($href, $portalContestUrl);
+            if ($firstUrl) {
+                break;
+            }
+        }
+    }
+
+    if ($firstUrl === null) {
+        return null;
+    }
+
+    $html2 = fetchHtml($firstUrl);
+    if ($html2 === null) {
+        return $firstUrl;
+    }
+
+    $dom2 = new DOMDocument();
+    @$dom2->loadHTML($html2);
+    $xpath2 = new DOMXPath($dom2);
+
+    $finalUrl = null;
+
+    foreach ($xpath2->query('//a[@href]') as $a) {
+        $text = trim($a->textContent ?? '');
+        $textLower = mb_strtolower($text, 'UTF-8');
+
+        if (mb_strpos($textLower, 'zum gewinnspiel') !== false) {
+            $href = $a->getAttribute('href');
+            $candidate = normalizeUrl($href, $firstUrl);
+            if ($candidate) {
+                $finalUrl = $candidate;
+                break;
+            }
+        }
+    }
+
+    return $finalUrl ?? $firstUrl;
 }
