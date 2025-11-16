@@ -18,6 +18,8 @@ $portale = [
     'einfach-sparsam'    => 'https://www.einfach-sparsam.de/gewinnspiele?page=1&id=76468&',
     'gewinnspiele-markt' => 'https://www.gewinnspiele-markt.de/gewinnspiel-gratis-gara-00.html',
     'gewinnspiel.de'     => 'https://www.gewinnspiel.de',
+    '12gewinn.de'        => 'https://www.12gewinn.de',
+    'supergewinne.de'    => 'https://www.supergewinne.de',
 ];
 
 main($dbHost, $dbName, $dbUser, $dbPass, $portale);
@@ -45,6 +47,7 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
         'valid_portal_contests'  => 0,
         'teilnahme_links_found'  => 0,
         'saved'                  => 0,
+        'discarded'              => 0,
     ];
 
     foreach ($portale as $portalName => $portalUrl) {
@@ -57,6 +60,7 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
         $validPortalCount = 0;
         $teilnahmeFoundCount = 0;
         $savedCount = 0;
+        $discardedCount = 0;
 
         foreach ($contestLinks as $portalContestUrl) {
             if (isJunkUrl($portalContestUrl)) {
@@ -86,14 +90,18 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
             }
         }
 
+        $discardedCount = max(0, $portalLinkCount - $savedCount);
+
         $totals['valid_portal_contests'] += $validPortalCount;
         $totals['teilnahme_links_found'] += $teilnahmeFoundCount;
         $totals['saved'] += $savedCount;
+        $totals['discarded'] += $discardedCount;
 
-        echo '<p>Portal-Detailseiten gefunden: ' . $portalLinkCount . '</p>';
+        echo '<p>Gefundene Portal-Gewinnspielseiten: ' . $portalLinkCount . '</p>';
         echo '<p>Davon als Gewinnspiele erkannt (mit Datum &amp; Gewinn): ' . $validPortalCount . '</p>';
-        echo '<p>"Jetzt teilnehmen"-Links gefunden: ' . $teilnahmeFoundCount . '</p>';
+        echo '<p>Ermittelte externe Teilnahme-Links: ' . $teilnahmeFoundCount . '</p>';
         echo '<p>Davon gespeichert: ' . $savedCount . '</p>';
+        echo '<p>Verworfene Einträge: ' . $discardedCount . '</p>';
     }
 
     echo '<h2>Gesamtübersicht</h2>';
@@ -101,6 +109,7 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
     echo '<p>Davon als Gewinnspiele erkannt: ' . $totals['valid_portal_contests'] . '</p>';
     echo '<p>"Jetzt teilnehmen"-Links gefunden: ' . $totals['teilnahme_links_found'] . '</p>';
     echo '<p>Gespeicherte Gewinnspiele (mit Enddatum &amp; Preis): ' . $totals['saved'] . '</p>';
+    echo '<p>Verworfene Einträge gesamt: ' . $totals['discarded'] . '</p>';
     echo '<p>Fertig. Insgesamt ' . $totals['saved'] . ' neue Gewinnspiele gespeichert.</p>';
     echo '<h2>Scan abgeschlossen – alle Gewinnspiele wurden verarbeitet.</h2>';
     echo '<p>Dieses Skript ist bereit, per Cronjob / Aufgabenplanung alle 10 Minuten ausgeführt zu werden.</p>';
