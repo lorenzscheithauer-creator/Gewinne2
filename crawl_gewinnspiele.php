@@ -37,10 +37,10 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
     }
 
     $totals = [
-        'portal_links'   => 0,
-        'external_pages' => 0,
-        'saved'          => 0,
-        'invalid'        => 0,
+        'portal_links'           => 0,
+        'valid_portal_contests'  => 0,
+        'teilnahme_links_found'  => 0,
+        'saved'                  => 0,
     ];
 
     foreach ($portale as $portalName => $portalUrl) {
@@ -50,30 +50,30 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
         $portalLinkCount = count($contestLinks);
         $totals['portal_links'] += $portalLinkCount;
 
-        $finalPages = [];
-        foreach ($contestLinks as $portalContestUrl) {
-            $finalUrl = findExternalContestPage($portalContestUrl) ?? $portalContestUrl;
-            if ($finalUrl !== null) {
-                $finalPages[] = $finalUrl;
-            }
-        }
-
-        $uniqueFinalPages = array_values(array_unique($finalPages));
-        $externalCount = count($uniqueFinalPages);
-        $totals['external_pages'] += $externalCount;
-
+        $validPortalCount = 0;
+        $teilnahmeFoundCount = 0;
         $savedCount = 0;
-        $invalidCount = 0;
 
-        foreach ($uniqueFinalPages as $finalUrl) {
-            if (isJunkUrl($finalUrl)) {
-                $invalidCount++;
+        foreach ($contestLinks as $portalContestUrl) {
+            if (isJunkUrl($portalContestUrl)) {
                 continue;
             }
 
-            $analysis = analyzeContestPage($finalUrl);
+            $analysis = analyzePortalContestPage($portalContestUrl);
             if ($analysis === null) {
-                $invalidCount++;
+                continue;
+            }
+
+            $validPortalCount++;
+
+            $finalUrl = findJetztTeilnehmenLink($portalContestUrl);
+            if ($finalUrl === null) {
+                continue;
+            }
+
+            $teilnahmeFoundCount++;
+
+            if (isJunkUrl($finalUrl)) {
                 continue;
             }
 
@@ -82,21 +82,22 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
             }
         }
 
+        $totals['valid_portal_contests'] += $validPortalCount;
+        $totals['teilnahme_links_found'] += $teilnahmeFoundCount;
         $totals['saved'] += $savedCount;
-        $totals['invalid'] += $invalidCount;
 
-        echo '<p>Portal-Gewinnspiel-Links: ' . $portalLinkCount . '</p>';
-        echo '<p>Direkte Gewinnspiel-Seiten geprüft: ' . $externalCount . '</p>';
-        echo '<p>Davon gespeichert (mit Enddatum &amp; Preis): ' . $savedCount . '</p>';
-        echo '<p>Verworfen: ' . $invalidCount . '</p>';
+        echo '<p>Portal-Detailseiten gefunden: ' . $portalLinkCount . '</p>';
+        echo '<p>Davon als Gewinnspiele erkannt (mit Datum &amp; Gewinn): ' . $validPortalCount . '</p>';
+        echo '<p>"Jetzt teilnehmen"-Links gefunden: ' . $teilnahmeFoundCount . '</p>';
+        echo '<p>Davon gespeichert: ' . $savedCount . '</p>';
     }
 
     echo '<h2>Gesamtübersicht</h2>';
-    echo '<p>Fertig. Insgesamt ' . $totals['saved'] . ' neue Gewinnspiele gespeichert.</p>';
-    echo '<p>Portal-Gewinnspiel-Links gesamt: ' . $totals['portal_links'] . '</p>';
-    echo '<p>Direkte Gewinnspiel-Seiten geprüft: ' . $totals['external_pages'] . '</p>';
+    echo '<p>Portal-Detailseiten gesamt: ' . $totals['portal_links'] . '</p>';
+    echo '<p>Davon als Gewinnspiele erkannt: ' . $totals['valid_portal_contests'] . '</p>';
+    echo '<p>"Jetzt teilnehmen"-Links gefunden: ' . $totals['teilnahme_links_found'] . '</p>';
     echo '<p>Gespeicherte Gewinnspiele (mit Enddatum &amp; Preis): ' . $totals['saved'] . '</p>';
-    echo '<p>Verworfen (kein Datum/Gewinn oder Junk): ' . $totals['invalid'] . '</p>';
+    echo '<p>Fertig. Insgesamt ' . $totals['saved'] . ' neue Gewinnspiele gespeichert.</p>';
     echo '</body></html>';
 }
 
@@ -187,42 +188,6 @@ function findContestLinksOnPortal(string $portalUrl): array
     }
 
     return array_values(array_unique($links));
-}
-
-function findExternalContestPage(string $portalPageUrl): ?string
-{
-    $html = fetchHtml($portalPageUrl);
-    if ($html === null) {
-        return null;
-    }
-
-    $portalHost = parse_url($portalPageUrl, PHP_URL_HOST);
-
-    $dom = new DOMDocument();
-    libxml_use_internal_errors(true);
-    @$dom->loadHTML($html);
-    libxml_clear_errors();
-
-    $xpath = new DOMXPath($dom);
-    $nodes = $xpath->query('//a[@href]');
-    if ($nodes === false) {
-        return null;
-    }
-
-    foreach ($nodes as $node) {
-        $href = $node->getAttribute('href');
-        $fullUrl = normalizeUrl($href, $portalPageUrl);
-        if ($fullUrl === null) {
-            continue;
-        }
-
-        $host = parse_url($fullUrl, PHP_URL_HOST);
-        if ($host && mb_strtolower($host, 'UTF-8') !== mb_strtolower((string) $portalHost, 'UTF-8')) {
-            return $fullUrl;
-        }
-    }
-
-    return null;
 }
 
 function normalizeUrl(string $href, string $baseUrl): ?string
@@ -359,9 +324,9 @@ function saveLinkIfNew(PDO $pdo, string $link, array $analysis): bool
     return true;
 }
 
-function analyzeContestPage(string $url): ?array
+function analyzePortalContestPage(string $portalContestUrl): ?array
 {
-    $html = fetchHtml($url);
+    $html = fetchHtml($portalContestUrl);
     if ($html === null) {
         return null;
     }
@@ -373,13 +338,12 @@ function analyzeContestPage(string $url): ?array
         'gewinn', 'gewinnen', 'gewinnspiel', 'verlosung',
         'preis', 'preise', 'hauptpreis',
         'zu gewinnen', 'wir verlosen', 'chance auf',
-        'gutschein', 'reise', 'auto', 'jackpot',
-        'teilnahmeschluss', 'einsendeschluss'
+        'gutschein', 'reise', 'reisegutschein', 'auto', 'jackpot'
     ];
 
     $hasPrize = false;
-    foreach ($keywords as $keyword) {
-        if (mb_strpos($textLower, $keyword) !== false) {
+    foreach ($keywords as $kw) {
+        if (mb_strpos($textLower, $kw) !== false) {
             $hasPrize = true;
             break;
         }
@@ -389,11 +353,11 @@ function analyzeContestPage(string $url): ?array
         return null;
     }
 
-    if (!preg_match('~(\d{1,2}\.\d{1,2}\.\d{2,4})~', $textLower, $matches)) {
+    if (!preg_match('~(\d{1,2}\.\d{1,2}\.\d{2,4})~', $textLower, $m)) {
         return null;
     }
 
-    $dateStr = $matches[1];
+    $dateStr = $m[1];
     $date = DateTime::createFromFormat('d.m.Y', $dateStr)
         ?: DateTime::createFromFormat('d.m.y', $dateStr);
 
@@ -409,4 +373,42 @@ function analyzeContestPage(string $url): ?array
         'status'   => $status,
         'end_date' => $endDate->format('Y-m-d'),
     ];
+}
+
+function findJetztTeilnehmenLink(string $portalContestUrl): ?string
+{
+    $html = fetchHtml($portalContestUrl);
+    if ($html === null) {
+        return null;
+    }
+
+    $dom = new DOMDocument();
+    libxml_use_internal_errors(true);
+    @$dom->loadHTML($html);
+    libxml_clear_errors();
+
+    $xpath = new DOMXPath($dom);
+    $nodes = $xpath->query('//a[@href]');
+    if ($nodes === false) {
+        return null;
+    }
+
+    foreach ($nodes as $a) {
+        $href = $a->getAttribute('href');
+        $text = trim($a->textContent ?? '');
+        $textLower = mb_strtolower($text, 'UTF-8');
+
+        if (
+            mb_strpos($textLower, 'jetzt teilnehmen') !== false ||
+            mb_strpos($textLower, 'zur teilnahme') !== false ||
+            mb_strpos($textLower, 'teilnehmen') !== false
+        ) {
+            $fullUrl = normalizeUrl($href, $portalContestUrl);
+            if ($fullUrl) {
+                return $fullUrl;
+            }
+        }
+    }
+
+    return null;
 }
