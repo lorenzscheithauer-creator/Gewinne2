@@ -1,4 +1,8 @@
 <?php
+// Erhöht die maximale Laufzeit – verhindert Abbruch nach ca. 120 Sekunden
+ini_set('max_execution_time', 0);  // kein Zeitlimit
+set_time_limit(0);                 // unendlich lange erlaubt
+
 // Hinweis: Dieses Skript kann z. B. über die Windows Aufgabenplanung alle 10 Minuten
 // mit "php.exe C:\\xampp\\htdocs\\Gewinne2\\crawl_gewinnspiele.php" ausgeführt werden.
 
@@ -98,6 +102,8 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
     echo '<p>"Jetzt teilnehmen"-Links gefunden: ' . $totals['teilnahme_links_found'] . '</p>';
     echo '<p>Gespeicherte Gewinnspiele (mit Enddatum &amp; Preis): ' . $totals['saved'] . '</p>';
     echo '<p>Fertig. Insgesamt ' . $totals['saved'] . ' neue Gewinnspiele gespeichert.</p>';
+    echo '<h2>Scan abgeschlossen – alle Gewinnspiele wurden verarbeitet.</h2>';
+    echo '<p>Dieses Skript ist bereit, per Cronjob / Aufgabenplanung alle 10 Minuten ausgeführt zu werden.</p>';
     echo '</body></html>';
 }
 
