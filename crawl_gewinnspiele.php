@@ -10,99 +10,15 @@ $dbName = 'gewinnspiele_db';
 $dbUser = 'root';
 $dbPass = '';
 
-$quellen = [
-    'Alverde'                 => 'https://www.dm.de/alverde',
-    'Amazon'                  => 'https://www.amazon.de',
-    'BayWa'                   => 'https://www.baywa.de',
-    'Billigflieger'           => 'https://www.billigfluege.de',
-    'BMW'                     => 'https://www.bmw.de',
-    'Cosmopolitan'            => 'https://www.cosmopolitan.de',
-    'DM'                      => 'https://www.dm.de',
-    'Ferrero'                 => 'https://www.ferrero.de',
-    'Freiberger Pils'         => 'https://www.freiberger.de',
-    'Für Sie'                 => 'https://www.fuersie.de',
-    'Kinder Bueno'            => 'https://www.ferrero.de/marken/kinder-bueno',
-    'Krombacher'              => 'https://www.krombacher.de',
-    'Lego'                    => 'https://www.lego.com/de-de',
-    'Mercedes'                => 'https://www.mercedes-benz.de',
-    'Mini'                    => 'https://www.mini.de',
-    'Müller'                  => 'https://www.mueller.de',
-    'Netto'                   => 'https://www.netto-online.de',
-    'Netto Online'            => 'https://www.netto-online.de',
-    'PayPal'                  => 'https://www.paypal.com',
-    'Rewe'                    => 'https://www.rewe.de',
-    'Rossmann'                => 'https://www.rossmann.de',
-    'Staropramen'             => 'https://www.staropramen.com',
-    'TUI'                     => 'https://www.tui.com',
-    'VW'                      => 'https://www.volkswagen.de',
-    'ZDF'                     => 'https://www.zdf.de',
-    'Schweizer Käse'          => 'https://www.schweizerkaese.de',
-    'Sport1'                  => 'https://www.sport1.de',
-    'GewinnArena'             => 'https://www.gewinnarena.de',
-    'Elbenwald'               => 'https://www.elbenwald.de',
-    'Schöner Wohnen Farbe'    => 'https://www.schoener-wohnen-farbe.de',
-    'Hardwaredealz'           => 'https://www.hardwaredealz.com',
-    'Fruchtzwerge'            => 'https://www.fruchtzwerge.de',
-    'Pixum'                   => 'https://www.pixum.de',
-    'Facebook'                => 'https://www.facebook.com',
-    'X (Twitter)'             => 'https://www.x.com',
-    'Bluesky'                 => 'https://bsky.app',
-    'Lidl'                    => 'https://www.lidl.de',
-    'Sportschau'              => 'https://www.sportschau.de',
-    'Aldi'                    => 'https://www.aldi.de',
-    'Rei in der Tube'         => 'https://www.rei.de',
-    'Elle'                    => 'https://www.elle.de',
-    'Crodino'                 => 'https://www.crodino.com',
-    'Edeka'                   => 'https://www.edeka.de',
-    'Bergwelten'              => 'https://www.bergwelten.com',
-    'EatSmarter'              => 'https://www.eatsmarter.de',
-    'Glamour'                 => 'https://www.glamour.de',
-    'GQ'                      => 'https://www.gq-magazin.de',
-    'Men’s Health'            => 'https://www.menshealth.de',
-    'Myself'                  => 'https://www.myself.de',
-    'Playmobil'               => 'https://www.playmobil.de',
-    'Selbst'                  => 'https://www.selbst.de',
-    'Wunderweib'              => 'https://www.wunderweib.de',
-    'Grazia'                  => 'https://www.grazia-magazin.de',
-    'Baur'                    => 'https://www.baur.de',
-    'DocMorris'               => 'https://www.docmorris.de',
-    'Temu'                    => 'https://www.temu.com',
-    'Cyberport'               => 'https://www.cyberport.de',
-    'Allnatura'               => 'https://www.allnatura.de',
-    'Erwin Müller'            => 'https://www.erwinmueller.de',
-    'ATU'                     => 'https://www.atu.de',
-    'CBD Vital'               => 'https://www.cbd-vital.de',
-    'Sheego'                  => 'https://www.sheego.de',
-    'Heine'                   => 'https://www.heine.de',
-    'Tchibo'                  => 'https://www.tchibo.de',
-    'Apotheke.com'            => 'https://www.apotheke.com',
-    'SHZ'                     => 'https://www.shz.de',
-    'Rocketbeans'             => 'https://rocketbeans.tv',
-    'Texel'                   => 'https://www.texel.de',
-    'BABOR'                   => 'https://www.babor.de',
-    'LENTHO'                  => 'https://www.lentho.de',
-    'Hanfgarten'              => 'https://www.hanfgarten.at',
-    'BurdaDirect'             => 'https://www.burdadirect.de',
-    'Hagen Grote'             => 'https://www.hagengrote.de',
-    'Visit Czechia'           => 'https://www.visitczechia.com',
-    'Notebooksbilliger'       => 'https://www.notebooksbilliger.de',
-    'BLICK'                   => 'https://www.blick.ch',
-    'Lotto24'                 => 'https://www.lotto24.de',
-    'dm Glückskind'           => 'https://www.dm.de/glueckskind',
-    'Bebivita'                => 'https://www.bebivita.de',
-    'PETA'                    => 'https://www.peta.de',
-    'BMBF Forscher'           => 'https://www.forscher-online.de',
-    'Vileda'                  => 'https://www.vileda.de',
-    'Bens Original'           => 'https://www.bensoriginal.de',
-    'Sensodyne'               => 'https://www.sensodyne.de',
-    'REWE Testesser'          => 'https://www.rewe.de',
-    'trnd'                    => 'https://www.trnd.com',
-    'True Motion'             => 'https://www.truemotion.run',
+$portale = [
+    'einfach-sparsam'    => 'https://www.einfach-sparsam.de/gewinnspiele?page=1&id=76468&',
+    'gewinnspiele-markt' => 'https://www.gewinnspiele-markt.de/gewinnspiel-gratis-gara-00.html',
+    'gewinnspiel.de'     => 'https://www.gewinnspiel.de',
 ];
 
-main($dbHost, $dbName, $dbUser, $dbPass, $quellen);
+main($dbHost, $dbName, $dbUser, $dbPass, $portale);
 
-function main(string $host, string $dbName, string $user, string $pass, array $quellen): void
+function main(string $host, string $dbName, string $user, string $pass, array $portale): void
 {
     echo "<!DOCTYPE html><html lang=\"de\"><head><meta charset=\"utf-8\"><title>Gewinnspiel-Crawler</title></head><body>";
     echo '<h1>Gewinnspiel-Crawler</h1>';
@@ -120,82 +36,72 @@ function main(string $host, string $dbName, string $user, string $pass, array $q
         return;
     }
 
-    $totalInserted = 0;
-    $totalJunk = 0;
-    $totalNoPrizeText = 0;
-    $totalNoDate = 0;
-    $totalChecked = 0;
+    $totals = [
+        'portal_links'   => 0,
+        'external_pages' => 0,
+        'saved'          => 0,
+        'invalid'        => 0,
+    ];
 
-    foreach ($quellen as $name => $startUrl) {
-        echo '<h3>Quelle: ' . htmlspecialchars($name) . ' (' . htmlspecialchars($startUrl) . ')</h3>';
-        $html = fetchHtml($startUrl);
+    foreach ($portale as $portalName => $portalUrl) {
+        echo '<h3>Portal: ' . htmlspecialchars($portalName) . ' (' . htmlspecialchars($portalUrl) . ')</h3>';
+        echo '<p>Portal-Link → externe Seite → Analyse → Speicherung</p>';
 
-        if ($html === null) {
-            echo '<p>Fehler beim Abrufen. Quelle wird übersprungen.</p>';
-            continue;
+        $contestLinks = findContestLinksOnPortal($portalUrl);
+        $portalLinkCount = count($contestLinks);
+        $totals['portal_links'] += $portalLinkCount;
+
+        $finalPages = [];
+        foreach ($contestLinks as $portalContestUrl) {
+            $finalUrl = findExternalContestPage($portalContestUrl) ?? $portalContestUrl;
+            if ($finalUrl !== null) {
+                $finalPages[] = $finalUrl;
+            }
         }
 
-        $links = extractLinks($html, $startUrl);
-        $foundCount = count($links);
-        $newCount = 0;
-        $junkCount = 0;
-        $noPrizeTextCount = 0;
-        $noDateCount = 0;
+        $uniqueFinalPages = array_values(array_unique($finalPages));
+        $externalCount = count($uniqueFinalPages);
+        $totals['external_pages'] += $externalCount;
 
-        foreach ($links as $link) {
-            if (isJunkUrl($link)) {
-                $junkCount++;
+        $savedCount = 0;
+        $invalidCount = 0;
+
+        foreach ($uniqueFinalPages as $finalUrl) {
+            if (isJunkUrl($finalUrl)) {
+                $invalidCount++;
                 continue;
             }
 
-            $failureReason = null;
-            $analysis = analyzeContestPage($link, $failureReason);
+            $analysis = analyzeContestPage($finalUrl);
             if ($analysis === null) {
-                if ($failureReason === 'no_prize_text') {
-                    $noPrizeTextCount++;
-                } elseif ($failureReason === 'no_date') {
-                    $noDateCount++;
-                }
+                $invalidCount++;
                 continue;
             }
 
-            if (saveLinkIfNew($pdo, $link, $analysis)) {
-                $newCount++;
+            if (saveLinkIfNew($pdo, $finalUrl, $analysis)) {
+                $savedCount++;
             }
         }
 
-        $totalJunk += $junkCount;
-        $totalNoPrizeText += $noPrizeTextCount;
-        $totalNoDate += $noDateCount;
-        $totalChecked += $foundCount;
+        $totals['saved'] += $savedCount;
+        $totals['invalid'] += $invalidCount;
 
-        $discarded = $junkCount + $noPrizeTextCount + $noDateCount;
-
-        echo sprintf(
-            '<p>Geprüfte Links: %d, gültige Gewinnspiele mit Enddatum: %d, verworfen: %d (Junk: %d, kein Gewinnspiel-Text: %d, kein Datum: %d)</p>',
-            $foundCount,
-            $newCount,
-            $discarded,
-            $junkCount,
-            $noPrizeTextCount,
-            $noDateCount
-        );
-
-        $totalInserted += $newCount;
+        echo '<ul>';
+        echo '<li>Gefundene Portal-Gewinnspiel-Links: ' . $portalLinkCount . '</li>';
+        echo '<li>Ermittelte finale/externe Seiten: ' . $externalCount . '</li>';
+        echo '<li>Davon mit Datum &amp; Gewinn gespeichert: ' . $savedCount . '</li>';
+        echo '<li>Verworfen (kein Datum/Gewinn oder Junk): ' . $invalidCount . '</li>';
+        echo '</ul>';
     }
 
-    $totalDiscarded = $totalJunk + $totalNoPrizeText + $totalNoDate;
-
     echo '<h2>Gesamtübersicht</h2>';
-    echo '<p>Fertig. Insgesamt ' . $totalInserted . ' neue Links gespeichert.</p>';
-    echo sprintf(
-        '<p>Geprüfte Links gesamt: %d, verworfen: %d (Junk: %d, kein Gewinnspiel-Text: %d, kein Datum: %d)</p>',
-        $totalChecked,
-        $totalDiscarded,
-        $totalJunk,
-        $totalNoPrizeText,
-        $totalNoDate
-    );
+    echo '<p>Fertig. Insgesamt ' . $totals['saved'] . ' neue Gewinnspiele gespeichert.</p>';
+    echo '<ul>';
+    echo '<li>Portal-Gewinnspiel-Links gesamt: ' . $totals['portal_links'] . '</li>';
+    echo '<li>Finale/externe Seiten gesamt: ' . $totals['external_pages'] . '</li>';
+    echo '<li>Gespeicherte Gewinnspiele mit Datum &amp; Gewinn: ' . $totals['saved'] . '</li>';
+    echo '<li>Verworfen (kein Datum/Gewinn oder Junk): ' . $totals['invalid'] . '</li>';
+    echo '</ul>';
     echo '</body></html>';
 }
 
@@ -240,19 +146,19 @@ function fetchHtml(string $url): ?string
     return $html;
 }
 
-function extractLinks(string $html, string $baseUrl): array
+function findContestLinksOnPortal(string $portalUrl): array
 {
-    $doc = new DOMDocument();
-    libxml_use_internal_errors(true);
-    $loaded = $doc->loadHTML($html);
-    libxml_clear_errors();
-
-    if (!$loaded) {
-        echo '<p>HTML konnte nicht verarbeitet werden.</p>';
+    $html = fetchHtml($portalUrl);
+    if ($html === null) {
         return [];
     }
 
-    $xpath = new DOMXPath($doc);
+    $dom = new DOMDocument();
+    libxml_use_internal_errors(true);
+    @$dom->loadHTML($html);
+    libxml_clear_errors();
+
+    $xpath = new DOMXPath($dom);
     $nodes = $xpath->query('//a[@href]');
     if ($nodes === false) {
         return [];
@@ -262,20 +168,66 @@ function extractLinks(string $html, string $baseUrl): array
 
     foreach ($nodes as $node) {
         $href = $node->getAttribute('href');
-        $normalized = normalizeUrl($href, $baseUrl);
-
-        if ($normalized === null) {
+        $fullUrl = normalizeUrl($href, $portalUrl);
+        if ($fullUrl === null) {
             continue;
         }
 
-        if (!containsKeyword($normalized)) {
+        if (rtrim($fullUrl, '/') === rtrim($portalUrl, '/')) {
             continue;
         }
 
-        $links[] = $normalized;
+        $text = trim($node->textContent ?? '');
+        $haystack = mb_strtolower($fullUrl . ' ' . $text, 'UTF-8');
+
+        if (
+            mb_strpos($haystack, 'gewinn') === false &&
+            mb_strpos($haystack, 'gewinnspiel') === false &&
+            mb_strpos($haystack, 'verlosung') === false
+        ) {
+            continue;
+        }
+
+        $links[] = $fullUrl;
     }
 
     return array_values(array_unique($links));
+}
+
+function findExternalContestPage(string $portalPageUrl): ?string
+{
+    $html = fetchHtml($portalPageUrl);
+    if ($html === null) {
+        return null;
+    }
+
+    $portalHost = parse_url($portalPageUrl, PHP_URL_HOST);
+
+    $dom = new DOMDocument();
+    libxml_use_internal_errors(true);
+    @$dom->loadHTML($html);
+    libxml_clear_errors();
+
+    $xpath = new DOMXPath($dom);
+    $nodes = $xpath->query('//a[@href]');
+    if ($nodes === false) {
+        return null;
+    }
+
+    foreach ($nodes as $node) {
+        $href = $node->getAttribute('href');
+        $fullUrl = normalizeUrl($href, $portalPageUrl);
+        if ($fullUrl === null) {
+            continue;
+        }
+
+        $host = parse_url($fullUrl, PHP_URL_HOST);
+        if ($host && mb_strtolower($host, 'UTF-8') !== mb_strtolower((string) $portalHost, 'UTF-8')) {
+            return $fullUrl;
+        }
+    }
+
+    return null;
 }
 
 function normalizeUrl(string $href, string $baseUrl): ?string
@@ -345,11 +297,6 @@ function normalizeUrl(string $href, string $baseUrl): ?string
     return filter_var($candidate, FILTER_VALIDATE_URL) ? $candidate : null;
 }
 
-function containsKeyword(string $url): bool
-{
-    return (bool) preg_match('/(gewinn|gewinnspiel|gewinnspiele|aktion)/i', $url);
-}
-
 function isJunkUrl(string $url): bool
 {
     $urlLower = mb_strtolower($url, 'UTF-8');
@@ -417,47 +364,37 @@ function saveLinkIfNew(PDO $pdo, string $link, array $analysis): bool
     return true;
 }
 
-function analyzeContestPage(string $url, ?string &$failureReason = null): ?array
+function analyzeContestPage(string $url): ?array
 {
-    $context = stream_context_create([
-        'http' => [
-            'timeout' => 10,
-            'user_agent' => 'Gewinne2Crawler/1.0',
-        ]
-    ]);
-
-    $html = @file_get_contents($url, false, $context);
-    if ($html === false || trim($html) === '') {
-        $failureReason = 'fetch_failed';
+    $html = fetchHtml($url);
+    if ($html === null) {
         return null;
     }
 
     $text = strip_tags($html);
-    $text = mb_strtolower($text, 'UTF-8');
+    $textLower = mb_strtolower($text, 'UTF-8');
 
     $keywords = [
         'gewinn', 'gewinnen', 'gewinnspiel', 'verlosung',
         'preis', 'preise', 'hauptpreis',
-        'zu gewinnen', 'wir verlosen', 'wir verlosen', 'chance auf',
+        'zu gewinnen', 'wir verlosen', 'chance auf',
         'gutschein', 'reise', 'auto', 'jackpot',
         'teilnahmeschluss', 'einsendeschluss'
     ];
 
-    $hasPrizeWords = false;
-    foreach ($keywords as $kw) {
-        if (mb_strpos($text, $kw) !== false) {
-            $hasPrizeWords = true;
+    $hasPrize = false;
+    foreach ($keywords as $keyword) {
+        if (mb_strpos($textLower, $keyword) !== false) {
+            $hasPrize = true;
             break;
         }
     }
 
-    if (!$hasPrizeWords) {
-        $failureReason = 'no_prize_text';
+    if (!$hasPrize) {
         return null;
     }
 
-    if (!preg_match('~(\d{1,2}\.\d{1,2}\.\d{2,4})~', $text, $matches)) {
-        $failureReason = 'no_date';
+    if (!preg_match('~(\d{1,2}\.\d{1,2}\.\d{2,4})~', $textLower, $matches)) {
         return null;
     }
 
@@ -466,13 +403,11 @@ function analyzeContestPage(string $url, ?string &$failureReason = null): ?array
         ?: DateTime::createFromFormat('d.m.y', $dateStr);
 
     if (!$date) {
-        $failureReason = 'no_date';
         return null;
     }
 
     $endDate = $date->setTime(23, 59, 59);
     $today = new DateTime('today');
-
     $status = ($endDate < $today) ? 'Expired' : 'Active';
 
     return [
