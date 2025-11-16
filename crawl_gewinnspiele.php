@@ -19,7 +19,7 @@ $portale = [
     'gewinnspiele-markt' => 'https://www.gewinnspiele-markt.de/gewinnspiel-gratis-gara-00.html',
     'gewinnspiel.de'     => 'https://www.gewinnspiel.de',
     '12gewinn'           => 'https://www.12gewinn.de',
-    'supergewinne.de'    => 'https://www.supergewinne.de',
+    'supergewinne'       => 'https://www.supergewinne.de',
 ];
 
 main($dbHost, $dbName, $dbUser, $dbPass, $portale);
@@ -53,7 +53,21 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
     foreach ($portale as $portalName => $portalUrl) {
         echo '<h3>Portal: ' . htmlspecialchars($portalName) . ' (' . htmlspecialchars($portalUrl) . ')</h3>';
 
-        $contestLinks = findContestLinksOnPortal($portalUrl);
+        if ($portalName === 'supergewinne') {
+            $listPages = getAllSupergewinneListPages($portalUrl);
+        } else {
+            $listPages = [$portalUrl];
+        }
+
+        $contestLinks = [];
+        foreach ($listPages as $listPageUrl) {
+            if ($portalName === 'supergewinne') {
+                $contestLinks = array_merge($contestLinks, findSupergewinneDetailLinks($listPageUrl));
+            } else {
+                $contestLinks = array_merge($contestLinks, findContestLinksOnPortal($listPageUrl));
+            }
+        }
+        $contestLinks = array_values(array_unique($contestLinks));
         $portalLinkCount = count($contestLinks);
         $totals['portal_links'] += $portalLinkCount;
 
@@ -74,7 +88,9 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
 
             $validPortalCount++;
 
-            if ($portalName === '12gewinn') {
+            if ($portalName === 'supergewinne') {
+                $finalUrl = findFinalContestUrlForSupergewinne($portalContestUrl);
+            } elseif ($portalName === '12gewinn') {
                 $finalUrl = findFinalContestUrlFor12Gewinn($portalContestUrl);
             } else {
                 $finalUrl = findJetztTeilnehmenLink($portalContestUrl);
@@ -204,6 +220,97 @@ function findContestLinksOnPortal(string $portalUrl): array
         }
 
         $links[] = $fullUrl;
+    }
+
+    return array_values(array_unique($links));
+}
+
+/**
+ * Sammelt alle Gewinnspiel-Listen-Seiten auf supergewinne.de
+ * (Startseite, Tabs, Paginierung).
+ */
+function getAllSupergewinneListPages(string $startUrl): array
+{
+    $toVisit = [$startUrl];
+    $visited = [];
+    $result  = [];
+
+    while ($toVisit) {
+        $url = array_pop($toVisit);
+        if (isset($visited[$url])) {
+            continue;
+        }
+        $visited[$url] = true;
+
+        $html = fetchHtml($url);
+        if ($html === null) {
+            continue;
+        }
+
+        $result[] = $url;
+
+        $dom = new DOMDocument();
+        @$dom->loadHTML($html);
+        $xpath = new DOMXPath($dom);
+
+        foreach ($xpath->query('//a[@href]') as $a) {
+            $href = $a->getAttribute('href');
+            $fullUrl = normalizeUrl($href, $url);
+            if (!$fullUrl) {
+                continue;
+            }
+
+            $host = parse_url($fullUrl, PHP_URL_HOST);
+            if (!$host || stripos($host, 'supergewinne.de') === false) {
+                continue;
+            }
+
+            $text = trim($a->textContent ?? '');
+            $haystack = mb_strtolower($fullUrl . ' ' . $text, 'UTF-8');
+
+            if (
+                mb_strpos($haystack, 'gewinnspiel') !== false ||
+                mb_strpos($haystack, 'gewinnspiele') !== false ||
+                mb_strpos($haystack, 'seite') !== false ||
+                mb_strpos($haystack, 'weiter') !== false
+            ) {
+                if (!isset($visited[$fullUrl])) {
+                    $toVisit[] = $fullUrl;
+                }
+            }
+        }
+    }
+
+    return array_values(array_unique($result));
+}
+
+/**
+ * Findet auf einer Supergewinne-Listen-Seite alle Detailseiten-Links ("mehr lesen").
+ */
+function findSupergewinneDetailLinks(string $listPageUrl): array
+{
+    $html = fetchHtml($listPageUrl);
+    if ($html === null) {
+        return [];
+    }
+
+    $dom = new DOMDocument();
+    @$dom->loadHTML($html);
+    $xpath = new DOMXPath($dom);
+
+    $links = [];
+
+    foreach ($xpath->query('//a[@href]') as $a) {
+        $text = trim($a->textContent ?? '');
+        $textLower = mb_strtolower($text, 'UTF-8');
+
+        if (mb_strpos($textLower, 'mehr lesen') !== false) {
+            $href = $a->getAttribute('href');
+            $fullUrl = normalizeUrl($href, $listPageUrl);
+            if ($fullUrl) {
+                $links[] = $fullUrl;
+            }
+        }
     }
 
     return array_values(array_unique($links));
@@ -392,6 +499,38 @@ function analyzePortalContestPage(string $portalContestUrl): ?array
         'status'   => $status,
         'end_date' => $endDate->format('Y-m-d'),
     ];
+}
+
+/**
+ * Supergewinne.de:
+ * Findet auf einer Detailseite den Button/Link "Jetzt direkt mitmachen!"
+ * und gibt dessen URL zurück.
+ */
+function findFinalContestUrlForSupergewinne(string $portalContestUrl): ?string
+{
+    $html = fetchHtml($portalContestUrl);
+    if ($html === null) {
+        return null;
+    }
+
+    $dom = new DOMDocument();
+    @$dom->loadHTML($html);
+    $xpath = new DOMXPath($dom);
+
+    foreach ($xpath->query('//a[@href]') as $a) {
+        $text = trim($a->textContent ?? '');
+        $textLower = mb_strtolower($text, 'UTF-8');
+
+        if (mb_strpos($textLower, 'jetzt direkt mitmachen') !== false) {
+            $href = $a->getAttribute('href');
+            $fullUrl = normalizeUrl($href, $portalContestUrl);
+            if ($fullUrl) {
+                return $fullUrl;
+            }
+        }
+    }
+
+    return null;
 }
 
 function findJetztTeilnehmenLink(string $portalContestUrl): ?string
