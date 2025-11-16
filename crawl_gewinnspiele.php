@@ -13,7 +13,6 @@ $dbPass = '';
 $seiten = [
     'https://12gewinne.de',
     'https://supergewinne.de',
-    'https://www.gewinn-portal.de',
 ];
 
 main($dbHost, $dbName, $dbUser, $dbPass, $seiten);
@@ -51,12 +50,24 @@ function main(string $host, string $dbName, string $user, string $pass, array $s
         $newCount = 0;
 
         foreach ($links as $link) {
+            if (isJunkUrl($link)) {
+                continue;
+            }
+
+            if (!pageHasPrizeInfo($link)) {
+                continue;
+            }
+
             if (saveLinkIfNew($pdo, $link)) {
                 $newCount++;
             }
         }
 
-        echo sprintf("  %d Links gefunden, %d neu eingefügt\n\n", $foundCount, $newCount);
+        echo sprintf(
+            "  %d Links gefunden (Junk-Links gefiltert, nur Seiten mit Gewinn-Begriffen gespeichert), %d neu eingefügt\n\n",
+            $foundCount,
+            $newCount
+        );
         $totalInserted += $newCount;
     }
 
@@ -213,6 +224,74 @@ function normalizeUrl(string $href, string $baseUrl): ?string
 function containsKeyword(string $url): bool
 {
     return (bool) preg_match('/(gewinn|gewinnspiel|gewinnspiele|aktion)/i', $url);
+}
+
+function isJunkUrl(string $url): bool
+{
+    $urlLower = mb_strtolower($url, 'UTF-8');
+
+    if (mb_strpos($urlLower, 'gewinn-portal.de') !== false) {
+        return true;
+    }
+
+    $badParts = [
+        '/user/', 'user=',
+        'profil', 'profile',
+        'login', 'anmeldung',
+        'register', 'registrieren',
+        'impressum', 'datenschutz', 'privacy',
+        'kontakt', 'contact',
+    ];
+
+    foreach ($badParts as $part) {
+        if (mb_strpos($urlLower, $part) !== false) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function pageHasPrizeInfo(string $url): bool
+{
+    static $cache = [];
+
+    if (array_key_exists($url, $cache)) {
+        return $cache[$url];
+    }
+
+    $context = stream_context_create([
+        'http' => [
+            'timeout' => 10,
+            'user_agent' => 'Gewinne2Crawler/1.0',
+        ],
+    ]);
+
+    $html = @file_get_contents($url, false, $context);
+    if ($html === false || trim($html) === '') {
+        return $cache[$url] = false;
+    }
+
+    $text = strip_tags($html);
+    $text = mb_strtolower($text, 'UTF-8');
+
+    $keywords = [
+        'gewinn', 'gewinnen', 'gewinnspiel', 'verlosung',
+        'preise', 'preis', 'hauptpreis',
+        'zu gewinnen', 'wir verlosen', 'chance auf',
+        'gutschein', 'reise', 'auto', 'jackpot',
+        'teilnahmeschluss', 'teilnehmen und gewinnen',
+        'sie können gewinnen', 'du kannst gewinnen',
+        'wir verlosen',
+    ];
+
+    foreach ($keywords as $kw) {
+        if (mb_strpos($text, $kw) !== false) {
+            return $cache[$url] = true;
+        }
+    }
+
+    return $cache[$url] = false;
 }
 
 function saveLinkIfNew(PDO $pdo, string $link): bool
