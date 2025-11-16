@@ -1,4 +1,5 @@
 name: Crawl Gewinnspiele
+# Hinweis: Der Fokus liegt aktuell auf der lokalen Nutzung via XAMPP; dieser Workflow ist optional.
 
 on:
   schedule:
