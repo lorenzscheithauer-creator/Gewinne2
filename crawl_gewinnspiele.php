@@ -10,17 +10,103 @@ $dbName = 'gewinnspiele_db';
 $dbUser = 'root';
 $dbPass = '';
 
-$seiten = [
-    'https://12gewinne.de',
-    'https://supergewinne.de',
+$quellen = [
+    'Alverde'                 => 'https://www.dm.de/alverde',
+    'Amazon'                  => 'https://www.amazon.de',
+    'BayWa'                   => 'https://www.baywa.de',
+    'Billigflieger'           => 'https://www.billigfluege.de',
+    'BMW'                     => 'https://www.bmw.de',
+    'Cosmopolitan'            => 'https://www.cosmopolitan.de',
+    'DM'                      => 'https://www.dm.de',
+    'Ferrero'                 => 'https://www.ferrero.de',
+    'Freiberger Pils'         => 'https://www.freiberger.de',
+    'Für Sie'                 => 'https://www.fuersie.de',
+    'Kinder Bueno'            => 'https://www.ferrero.de/marken/kinder-bueno',
+    'Krombacher'              => 'https://www.krombacher.de',
+    'Lego'                    => 'https://www.lego.com/de-de',
+    'Mercedes'                => 'https://www.mercedes-benz.de',
+    'Mini'                    => 'https://www.mini.de',
+    'Müller'                  => 'https://www.mueller.de',
+    'Netto'                   => 'https://www.netto-online.de',
+    'Netto Online'            => 'https://www.netto-online.de',
+    'PayPal'                  => 'https://www.paypal.com',
+    'Rewe'                    => 'https://www.rewe.de',
+    'Rossmann'                => 'https://www.rossmann.de',
+    'Staropramen'             => 'https://www.staropramen.com',
+    'TUI'                     => 'https://www.tui.com',
+    'VW'                      => 'https://www.volkswagen.de',
+    'ZDF'                     => 'https://www.zdf.de',
+    'Schweizer Käse'          => 'https://www.schweizerkaese.de',
+    'Sport1'                  => 'https://www.sport1.de',
+    'GewinnArena'             => 'https://www.gewinnarena.de',
+    'Elbenwald'               => 'https://www.elbenwald.de',
+    'Schöner Wohnen Farbe'    => 'https://www.schoener-wohnen-farbe.de',
+    'Hardwaredealz'           => 'https://www.hardwaredealz.com',
+    'Fruchtzwerge'            => 'https://www.fruchtzwerge.de',
+    'Pixum'                   => 'https://www.pixum.de',
+    'Facebook'                => 'https://www.facebook.com',
+    'X (Twitter)'             => 'https://www.x.com',
+    'Bluesky'                 => 'https://bsky.app',
+    'Lidl'                    => 'https://www.lidl.de',
+    'Sportschau'              => 'https://www.sportschau.de',
+    'Aldi'                    => 'https://www.aldi.de',
+    'Rei in der Tube'         => 'https://www.rei.de',
+    'Elle'                    => 'https://www.elle.de',
+    'Crodino'                 => 'https://www.crodino.com',
+    'Edeka'                   => 'https://www.edeka.de',
+    'Bergwelten'              => 'https://www.bergwelten.com',
+    'EatSmarter'              => 'https://www.eatsmarter.de',
+    'Glamour'                 => 'https://www.glamour.de',
+    'GQ'                      => 'https://www.gq-magazin.de',
+    'Men’s Health'            => 'https://www.menshealth.de',
+    'Myself'                  => 'https://www.myself.de',
+    'Playmobil'               => 'https://www.playmobil.de',
+    'Selbst'                  => 'https://www.selbst.de',
+    'Wunderweib'              => 'https://www.wunderweib.de',
+    'Grazia'                  => 'https://www.grazia-magazin.de',
+    'Baur'                    => 'https://www.baur.de',
+    'DocMorris'               => 'https://www.docmorris.de',
+    'Temu'                    => 'https://www.temu.com',
+    'Cyberport'               => 'https://www.cyberport.de',
+    'Allnatura'               => 'https://www.allnatura.de',
+    'Erwin Müller'            => 'https://www.erwinmueller.de',
+    'ATU'                     => 'https://www.atu.de',
+    'CBD Vital'               => 'https://www.cbd-vital.de',
+    'Sheego'                  => 'https://www.sheego.de',
+    'Heine'                   => 'https://www.heine.de',
+    'Tchibo'                  => 'https://www.tchibo.de',
+    'Apotheke.com'            => 'https://www.apotheke.com',
+    'SHZ'                     => 'https://www.shz.de',
+    'Rocketbeans'             => 'https://rocketbeans.tv',
+    'Texel'                   => 'https://www.texel.de',
+    'BABOR'                   => 'https://www.babor.de',
+    'LENTHO'                  => 'https://www.lentho.de',
+    'Hanfgarten'              => 'https://www.hanfgarten.at',
+    'BurdaDirect'             => 'https://www.burdadirect.de',
+    'Hagen Grote'             => 'https://www.hagengrote.de',
+    'Visit Czechia'           => 'https://www.visitczechia.com',
+    'Notebooksbilliger'       => 'https://www.notebooksbilliger.de',
+    'BLICK'                   => 'https://www.blick.ch',
+    'Lotto24'                 => 'https://www.lotto24.de',
+    'dm Glückskind'           => 'https://www.dm.de/glueckskind',
+    'Bebivita'                => 'https://www.bebivita.de',
+    'PETA'                    => 'https://www.peta.de',
+    'BMBF Forscher'           => 'https://www.forscher-online.de',
+    'Vileda'                  => 'https://www.vileda.de',
+    'Bens Original'           => 'https://www.bensoriginal.de',
+    'Sensodyne'               => 'https://www.sensodyne.de',
+    'REWE Testesser'          => 'https://www.rewe.de',
+    'trnd'                    => 'https://www.trnd.com',
+    'True Motion'             => 'https://www.truemotion.run',
 ];
 
-main($dbHost, $dbName, $dbUser, $dbPass, $seiten);
+main($dbHost, $dbName, $dbUser, $dbPass, $quellen);
 
-function main(string $host, string $dbName, string $user, string $pass, array $seiten): void
+function main(string $host, string $dbName, string $user, string $pass, array $quellen): void
 {
-    echo "<!DOCTYPE html><html lang=\"de\"><head><meta charset=\"utf-8\"><title>Gewinnspiel-Crawler</title></head><body><pre>";
-    echo "Starte Scan...\n\n";
+    echo "<!DOCTYPE html><html lang=\"de\"><head><meta charset=\"utf-8\"><title>Gewinnspiel-Crawler</title></head><body>";
+    echo '<h1>Gewinnspiel-Crawler</h1>';
+    echo '<p>Starte Scan...</p>';
 
     try {
         $dsn = sprintf('mysql:host=%s;dbname=%s;charset=utf8mb4', $host, $dbName);
@@ -29,8 +115,8 @@ function main(string $host, string $dbName, string $user, string $pass, array $s
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         ]);
     } catch (PDOException $e) {
-        echo 'Datenbankverbindung fehlgeschlagen: ' . htmlspecialchars($e->getMessage()) . "\n";
-        echo '</pre></body></html>';
+        echo '<p>Datenbankverbindung fehlgeschlagen: ' . htmlspecialchars($e->getMessage()) . '</p>';
+        echo '</body></html>';
         return;
     }
 
@@ -38,17 +124,18 @@ function main(string $host, string $dbName, string $user, string $pass, array $s
     $totalJunk = 0;
     $totalNoPrizeText = 0;
     $totalNoDate = 0;
+    $totalChecked = 0;
 
-    foreach ($seiten as $seite) {
-        echo 'Seite: ' . $seite . "\n";
-        $html = fetchHtml($seite);
+    foreach ($quellen as $name => $startUrl) {
+        echo '<h3>Quelle: ' . htmlspecialchars($name) . ' (' . htmlspecialchars($startUrl) . ')</h3>';
+        $html = fetchHtml($startUrl);
 
         if ($html === null) {
-            echo "  Fehler beim Abrufen. Überspringe die Seite.\n\n";
+            echo '<p>Fehler beim Abrufen. Quelle wird übersprungen.</p>';
             continue;
         }
 
-        $links = extractLinks($html, $seite);
+        $links = extractLinks($html, $startUrl);
         $foundCount = count($links);
         $newCount = 0;
         $junkCount = 0;
@@ -80,26 +167,36 @@ function main(string $host, string $dbName, string $user, string $pass, array $s
         $totalJunk += $junkCount;
         $totalNoPrizeText += $noPrizeTextCount;
         $totalNoDate += $noDateCount;
+        $totalChecked += $foundCount;
+
+        $discarded = $junkCount + $noPrizeTextCount + $noDateCount;
 
         echo sprintf(
-            "  %d Links gefunden, %d neu eingefügt. Verworfen: Junk %d | kein Gewinnspiel-Text %d | kein Datum %d\n\n",
+            '<p>Geprüfte Links: %d, gültige Gewinnspiele mit Enddatum: %d, verworfen: %d (Junk: %d, kein Gewinnspiel-Text: %d, kein Datum: %d)</p>',
             $foundCount,
             $newCount,
+            $discarded,
             $junkCount,
             $noPrizeTextCount,
             $noDateCount
         );
+
         $totalInserted += $newCount;
     }
 
-    echo 'Fertig. Insgesamt ' . $totalInserted . ' neue Links gespeichert.' . "\n";
+    $totalDiscarded = $totalJunk + $totalNoPrizeText + $totalNoDate;
+
+    echo '<h2>Gesamtübersicht</h2>';
+    echo '<p>Fertig. Insgesamt ' . $totalInserted . ' neue Links gespeichert.</p>';
     echo sprintf(
-        "Verworfen gesamt: Junk %d | kein Gewinnspiel-Text %d | kein Datum %d\n",
+        '<p>Geprüfte Links gesamt: %d, verworfen: %d (Junk: %d, kein Gewinnspiel-Text: %d, kein Datum: %d)</p>',
+        $totalChecked,
+        $totalDiscarded,
         $totalJunk,
         $totalNoPrizeText,
         $totalNoDate
     );
-    echo '</pre></body></html>';
+    echo '</body></html>';
 }
 
 function fetchHtml(string $url): ?string
@@ -127,7 +224,7 @@ function fetchHtml(string $url): ?string
 
     if ($html === false) {
         $error = error_get_last()['message'] ?? 'Unbekannter Fehler';
-        echo '  HTTP-Fehler: ' . $error . "\n";
+        echo '<p>HTTP-Fehler: ' . htmlspecialchars($error) . '</p>';
         return null;
     }
 
@@ -135,7 +232,7 @@ function fetchHtml(string $url): ?string
     if (isset($http_response_header[0]) && preg_match('/HTTP\/(?:1\.[01]|2) (\d{3})/', $http_response_header[0], $matches)) {
         $status = (int) $matches[1];
         if ($status >= 400) {
-            echo '  HTTP-Status ' . $status . ' – Seite wird übersprungen.' . "\n";
+            echo '<p>HTTP-Status ' . $status . ' – Seite wird übersprungen.</p>';
             return null;
         }
     }
@@ -151,7 +248,7 @@ function extractLinks(string $html, string $baseUrl): array
     libxml_clear_errors();
 
     if (!$loaded) {
-        echo '  HTML konnte nicht verarbeitet werden.' . "\n";
+        echo '<p>HTML konnte nicht verarbeitet werden.</p>';
         return [];
     }
 
