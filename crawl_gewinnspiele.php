@@ -1,12 +1,12 @@
 <?php
+declare(strict_types=1);
+
 // Erhöht die maximale Laufzeit – verhindert Abbruch nach ca. 120 Sekunden
 ini_set('max_execution_time', 0);  // kein Zeitlimit
 set_time_limit(0);                 // unendlich lange erlaubt
 
 // Hinweis: Dieses Skript kann z. B. über die Windows Aufgabenplanung alle 10 Minuten
 // mit "php.exe C:\\xampp\\htdocs\\Gewinne2\\crawl_gewinnspiele.php" ausgeführt werden.
-
-declare(strict_types=1);
 
 // Konfiguration für XAMPP (lokal anpassbar)
 $dbHost = 'localhost';
