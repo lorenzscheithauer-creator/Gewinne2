@@ -45,7 +45,6 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
 
     foreach ($portale as $portalName => $portalUrl) {
         echo '<h3>Portal: ' . htmlspecialchars($portalName) . ' (' . htmlspecialchars($portalUrl) . ')</h3>';
-        echo '<p>Portal-Link → externe Seite → Analyse → Speicherung</p>';
 
         $contestLinks = findContestLinksOnPortal($portalUrl);
         $portalLinkCount = count($contestLinks);
@@ -86,22 +85,18 @@ function main(string $host, string $dbName, string $user, string $pass, array $p
         $totals['saved'] += $savedCount;
         $totals['invalid'] += $invalidCount;
 
-        echo '<ul>';
-        echo '<li>Gefundene Portal-Gewinnspiel-Links: ' . $portalLinkCount . '</li>';
-        echo '<li>Ermittelte finale/externe Seiten: ' . $externalCount . '</li>';
-        echo '<li>Davon mit Datum &amp; Gewinn gespeichert: ' . $savedCount . '</li>';
-        echo '<li>Verworfen (kein Datum/Gewinn oder Junk): ' . $invalidCount . '</li>';
-        echo '</ul>';
+        echo '<p>Portal-Gewinnspiel-Links: ' . $portalLinkCount . '</p>';
+        echo '<p>Direkte Gewinnspiel-Seiten geprüft: ' . $externalCount . '</p>';
+        echo '<p>Davon gespeichert (mit Enddatum &amp; Preis): ' . $savedCount . '</p>';
+        echo '<p>Verworfen: ' . $invalidCount . '</p>';
     }
 
     echo '<h2>Gesamtübersicht</h2>';
     echo '<p>Fertig. Insgesamt ' . $totals['saved'] . ' neue Gewinnspiele gespeichert.</p>';
-    echo '<ul>';
-    echo '<li>Portal-Gewinnspiel-Links gesamt: ' . $totals['portal_links'] . '</li>';
-    echo '<li>Finale/externe Seiten gesamt: ' . $totals['external_pages'] . '</li>';
-    echo '<li>Gespeicherte Gewinnspiele mit Datum &amp; Gewinn: ' . $totals['saved'] . '</li>';
-    echo '<li>Verworfen (kein Datum/Gewinn oder Junk): ' . $totals['invalid'] . '</li>';
-    echo '</ul>';
+    echo '<p>Portal-Gewinnspiel-Links gesamt: ' . $totals['portal_links'] . '</p>';
+    echo '<p>Direkte Gewinnspiel-Seiten geprüft: ' . $totals['external_pages'] . '</p>';
+    echo '<p>Gespeicherte Gewinnspiele (mit Enddatum &amp; Preis): ' . $totals['saved'] . '</p>';
+    echo '<p>Verworfen (kein Datum/Gewinn oder Junk): ' . $totals['invalid'] . '</p>';
     echo '</body></html>';
 }
 
